@@ -3,7 +3,10 @@ const vm = new Vue({
   data:{
     produtos:[],
     produto:"",
-    carrinho:[]
+    carrinho:[],
+    carrinhoAtivo:false,
+    mensagemAlerta:"Item adicionado",
+    alertaAtivo: false
   },
   filters:{
     numeroPreco(valor){
@@ -41,6 +44,11 @@ const vm = new Vue({
       if(target === currentTarget)
       this.produto = false
     },
+    clickForaCarrinho({target,currentTarget}) {
+      if(target === currentTarget){
+        this.carrinhoAtivo = false;
+      }
+    },
     abrirModal(id){
       this.fetchProduto(id);
       window.scrollTo({
@@ -52,23 +60,51 @@ const vm = new Vue({
       this.produto.estoque--
       const {id, nome, preco} = this.produto
       this.carrinho.push({id, nome, preco})
+      this.alerta(`${nome} adicionado ao carrinho`)
     },
-    removerItem(){
-      this.carrinho.splice(index, 1)
+    removerItem(index
+      ){
+      this.carrinho.splice(index, 1);
     },
     checarLocalStorage(){
       if(window.localStorage.carrinho){
         this.carrinho = JSON.parse(window.localStorage.carrinho)
       }
+    },
+    compararEstoque(){
+      const itens = this.carrinho.filter(({id}) => id === this.produto.id);
+      this.produto.estoque -= itens.length  
+      },
+    alerta(mensagem){
+      this.mensagemAlerta = mensagem;
+      this.alertaAtivo = true;
+      setTimeout(()=>{
+        this.alertaAtivo=false
+      },1800)
+    },
+    router() {
+      const hash = document.location.hash;
+      if (hash)
+        this.fetchProduto(hash.replace("#", ""));
     }
   },
-  watch:{
-    carrinho(){
-      window.localStorage.carrinho= JSON.stringify(this.carrinho);
+  watch: {
+    produto() {
+      document.title = this.produto.nome || "Techno";
+      const hash = this.produto.id || "";
+      history.pushState(null, null, `#${hash}`);
+      if(this.produto){
+        this.compararEstoque();
+      }
+    },
+    carrinho() {
+      window.localStorage.carrinho = JSON.stringify(this.carrinho);
     }
   },
   created() {
-      this.fetchProdutos();
-      this.checarLocalStorage();
-    }
+    this.fetchProdutos();
+    this.router();
+    this.checarLocalStorage();
+  }
 })
+
